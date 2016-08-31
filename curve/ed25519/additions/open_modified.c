@@ -4,8 +4,9 @@
 #include "crypto_verify_32.h"
 #include "ge.h"
 #include "sc.h"
+#include "crypto_additions.h"
 
-int crypto_sign_open(
+int crypto_sign_open_modified(
   unsigned char *m,unsigned long long *mlen,
   const unsigned char *sm,unsigned long long smlen,
   const unsigned char *pk
@@ -20,7 +21,7 @@ int crypto_sign_open(
   ge_p2 R;
 
   if (smlen < 64) goto badsig;
-  if (sm[63] & 224) goto badsig;
+  if (sm[63] & 224) goto badsig; /* strict parsing of s */
   if (ge_frombytes_negate_vartime(&A,pk) != 0) goto badsig;
 
   memmove(pkcopy,pk,32);
@@ -34,6 +35,7 @@ int crypto_sign_open(
 
   ge_double_scalarmult_vartime(&R,h,&A,scopy);
   ge_tobytes(rcheck,&R);
+
   if (crypto_verify_32(rcheck,rcopy) == 0) {
     memmove(m,m + 64,smlen - 64);
     memset(m + smlen - 64,0,64);
